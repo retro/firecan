@@ -47,7 +47,7 @@
         Message = Firecan({
           list : base + "messages_list"
         }, {
-          getPriority : function(){
+          priority : function(){
             return (- parseInt(toHex(this.message.toLowerCase()), 16))
           }
         })

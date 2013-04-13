@@ -23,8 +23,8 @@ steal('can/util', 'can/observe', 'can/observe/list', 'can/construct/proxy', func
 			firebase.on('child_moved', this.proxy('_moveChild'));
 		},
 		_addChild : function(snapshot, prevSiblingId){
-			var data  = getData(snapshot),
-				model = this._model.model(data)
+			var data             = getData(snapshot),
+				model            = this._model.model(data)
 				prevSibling      = prevSiblingId ? this._model.store[prevSiblingId] : null,
 				prevSiblingIndex = prevSibling ? this.indexOf(prevSibling) : -1;
 
@@ -93,16 +93,27 @@ steal('can/util', 'can/observe', 'can/observe/list', 'can/construct/proxy', func
 			this.store[attributes[this.id]] = model;
 			
 			return model;
+		},
+		models : function(data){
+			var self = this;
+			return can.map(data, function(item){
+				return self.model(item);
+			})
 		}
 	}, {
-		setup : function(attributes){
+		setup : function(attributes, firebaseRef){
 			can.Observe.prototype.setup.call(this, (attributes || {}));
 
-			if(attributes.id){
-				this._firebaseRef = this.constructor._getFirebase(attributes.id);
+			if(firebaseRef){
+				this._firebaseRef = firebaseRef;
 			} else {
-				this._firebaseRef = this.constructor._getFirebase().push();
+				if(attributes.id){
+					this._firebaseRef = this.constructor._getFirebase(attributes.id);
+				} else {
+					this._firebaseRef = this.constructor._getFirebase().push();
+				}
 			}
+			
 			
 			this._firebaseRef.on('value', this.proxy('_setFromFirebase'));
 			
@@ -112,11 +123,11 @@ steal('can/util', 'can/observe', 'can/observe/list', 'can/construct/proxy', func
 			if(val){
 				this.attr('id', this._firebaseRef.name());
 				this.attr(snapshot.val());
-				this._triggerEv && this._triggerEvents(this._triggerEv);
+				this._triggerEv && this._trigger(this._triggerEv);
 				delete this._triggerEv;
 			}
 		},
-		_triggerEvents : function(ev){
+		_trigger : function(ev){
 			can.trigger(this, ev);
 			can.trigger(this.constructor, ev, this);
 		},
@@ -128,11 +139,11 @@ steal('can/util', 'can/observe', 'can/observe/list', 'can/construct/proxy', func
 			} else {
 				this._triggerEv = 'created';
 			}
-			this._firebaseRef.setWithPriority(data, this.getPriority());
+			this._firebaseRef.setWithPriority(data, this.priority());
 		},
 		destroy : function(){
 			this._firebaseRef.remove(this.proxy(function(){
-				this._triggerEvents('destroyed')
+				this._trigger('destroyed')
 			}));
 		},
 		bind: function(eventName){
@@ -154,7 +165,7 @@ steal('can/util', 'can/observe', 'can/observe/list', 'can/construct/proxy', func
 			}
 			return can.Observe.prototype.unbind.apply(this, arguments);
 		},
-		getPriority : function(){
+		priority : function(){
 			return null;
 		},
 		// Change `id`.
@@ -164,6 +175,11 @@ steal('can/util', 'can/observe', 'can/observe/list', 'can/construct/proxy', func
 			if(prop === this.constructor.id && this._bindings){
 				this.constructor.store[getId(this)] = this;
 			}
+		}
+	})
+	can.each(['created', 'destroyed', 'updated'], function(ev){
+		Firecan.prototype[ev] = function(){
+			this._trigger(ev);
 		}
 	})
 	return Firecan;
