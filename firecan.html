@@ -31,15 +31,33 @@
     <script type='text/javascript' id="demo-source">
     steal('firecan', 'can/view/mustache',
       function(Firecan){
-         var base = 'https://'+ window.location.search.substr(1) +'.firebaseIO.com/'
+
+        function toHex(str) {
+          var hex = [];
+          for(var i=0;i<str.length;i++) {
+            hex.push(str.charCodeAt(i).toString(16));
+          }
+          return hex.join("");
+        }
+
+
+        var base = 'https://'+ window.location.search.substr(1) +'.firebaseIO.com/'
 
 
         Message = Firecan({
           list : base + "messages_list"
-        }, {})
+        }, {
+          getPriority : function(){
+            return (- parseInt(toHex(this.message.toLowerCase()), 16))
+          }
+        })
 
-        template = can.view("#template", {messages : Message.collection()})
+        var collection =  Message.collection();
+
+        template = can.view("#template", {messages : collection})
         $('#demo-html').html(template)
+
+        
 
       })
     </script>

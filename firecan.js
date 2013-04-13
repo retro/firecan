@@ -20,12 +20,16 @@ steal('can/util', 'can/observe', 'can/observe/list', 'can/construct/proxy', func
 			this._model = model;
 			firebase.on('child_added', this.proxy('_addChild'));
 			firebase.on('child_removed', this.proxy('_removeChild'));
+			firebase.on('child_moved', this.proxy('_moveChild'));
 		},
-		_addChild : function(snapshot){
+		_addChild : function(snapshot, prevSiblingId){
 			var data  = getData(snapshot),
-				model = this._model.model(data);
+				model = this._model.model(data)
+				prevSibling      = prevSiblingId ? this._model.store[prevSiblingId] : null,
+				prevSiblingIndex = prevSibling ? this.indexOf(prevSibling) : -1;
 
-			this.push(model);
+			this.splice(prevSiblingIndex + 1, 0, model)
+			
 		},
 		_removeChild : function(snapshot){
 			var id    = snapshot.name(),
@@ -39,6 +43,17 @@ steal('can/util', 'can/observe', 'can/observe/list', 'can/construct/proxy', func
 			if(index !== -1){
 				this.splice(index, 1);
 			}
+		},
+		_moveChild : function(snapshot, prevSiblingId){
+			var data             = getData(snapshot),
+				model            = this._model.model(data),
+				prevSibling      = prevSiblingId ? this._model.store[prevSiblingId] : null,
+				modelIndex       = this.indexOf(model),
+				prevSiblingIndex = prevSibling ? this.indexOf(prevSibling) : -1;
+			can.Observe.startBatch();
+			this.splice(modelIndex, 1);
+			this.splice(prevSiblingIndex + 1, 0, model)
+			can.Observe.stopBatch();
 		}
 	})
 
@@ -107,14 +122,13 @@ steal('can/util', 'can/observe', 'can/observe/list', 'can/construct/proxy', func
 		},
 		save : function(){
 			var data = this.attr();
-			console.log(data)
 			if(data.id){
 				delete data.id
 				this._triggerEv = 'updated';
 			} else {
 				this._triggerEv = 'created';
 			}
-			this._firebaseRef.set(data);
+			this._firebaseRef.setWithPriority(data, this.getPriority());
 		},
 		destroy : function(){
 			this._firebaseRef.remove(this.proxy(function(){
@@ -139,6 +153,9 @@ steal('can/util', 'can/observe', 'can/observe/list', 'can/construct/proxy', func
 				delete this.constructor.store[getId(this)];
 			}
 			return can.Observe.prototype.unbind.apply(this, arguments);
+		},
+		getPriority : function(){
+			return null;
 		},
 		// Change `id`.
 		___set: function( prop, val ) {
