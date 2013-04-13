@@ -28,9 +28,14 @@ steal('can/util', 'can/observe', 'can/observe/list', 'can/construct/proxy', func
 			this.push(model);
 		},
 		_removeChild : function(snapshot){
-			var data  = getData(snapshot),
-				model = this._model.model(data),
-				index = this.indexOf(model);
+			var id    = snapshot.name(),
+				index = -1;
+			for(var i = 0; i < this.length; i++){
+				if(this[i].id === id){
+					index = i;
+					break;
+				}
+			}
 			if(index !== -1){
 				this.splice(index, 1);
 			}
@@ -98,7 +103,6 @@ steal('can/util', 'can/observe', 'can/observe/list', 'can/construct/proxy', func
 		},
 		_triggerEvents : function(ev){
 			can.trigger(this, ev);
-			can.trigger(this,"change",ev);
 			can.trigger(this.constructor, ev, this);
 		},
 		save : function(){
