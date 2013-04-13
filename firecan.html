@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Firecan Demo</title>
+    <style type='text/css'>
+    body {font-family: verdana}
+    li {border: solid 1px gray; padding: 5px; width: 250px;}
+    li a {color: red; font-weight: bold;}
+    p {width: 400px;}
+    </style>
+  </head>
+  <body>
+    <div id="demo-instructions">
+      <h1>Firecan Demo</h1>
+    </div>
+    <div id="demo-html">
+
+    </div>
+
+    <script id="template" type="text/mustache">
+      <ul>
+        {{#messages}}
+          <li>{{message}}</li>
+        {{/messages}}
+      </ul>
+    </script>
+
+    <script src="https://cdn.firebase.com/v0/firebase.js"></script>
+    <script type='text/javascript' src='../steal/steal.js'>
+    </script>
+    <script type='text/javascript' id="demo-source">
+    steal('firecan', 'can/view/mustache',
+      function(Firecan){
+         var base = 'https://'+ window.location.search.substr(1) +'.firebaseIO.com/'
+
+
+        Message = Firecan({
+          list : base + "messages_list"
+        }, {})
+
+        template = can.view("#template", {messages : Message.collection()})
+        $('#demo-html').html(template)
+
+      })
+    </script>
+  </body>
+</html>
